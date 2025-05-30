@@ -3,7 +3,7 @@ import tkinter as tk
 import threading
 
 class NQueensGenetic:
-    def __init__(self, N, population_size=100, mutation_rate=0.2, generations=1000):
+    def __init__(self, N, population_size=10, mutation_rate=0.2, generations=100):
         self.N = N
         self.population_size = population_size
         self.mutation_rate = mutation_rate
@@ -76,15 +76,22 @@ class NQueensGUI(tk.Tk):
 
         self.button_frame = tk.Frame(self)
         self.ga_button = tk.Button(self.button_frame, text="GA", command=self.run_ga, bg="#90EE90", fg="white", font=("Arial", 12, "bold"), padx=10, pady=5)
-        self.ga_button.grid(row=0, column=0, padx=5)
+        self.ga_button.grid(row=0, column=1, padx=5)
 
         self.btg_button = tk.Button(self.button_frame, text="BTA", command=self.run_btg, bg="#90EE90", fg="white", font=("Arial", 12, "bold"), padx=10, pady=5)
-        self.btg_button.grid(row=0, column=1, padx=5)
+        self.btg_button.grid(row=0, column=2, padx=5)
+
+        self.clear_button = tk.Button(self.button_frame, text="Clear", command=self.clear_board, bg="red", fg="white", font=("Arial", 12, "bold"), padx=10, pady=5)
+        self.clear_button.grid(row=0, column=3, padx=5)
+
+        self.back_button = tk.Button(self.button_frame, text="Back", command=self.go_back, bg="#1E90FF", fg="white", font=("Arial", 12, "bold"), padx=10, pady=5)
+        self.back_button.grid(row=0, column=0, padx=5)
 
         self.solution = None
         self.N = 8
     
     def init_board(self):
+        
         try:
             self.N = int(self.entry.get())
             if self.N < 4:
@@ -94,13 +101,24 @@ class NQueensGUI(tk.Tk):
             self.input_frame.pack_forget()
             self.canvas.pack()
             self.button_frame.pack(pady=10)
-
             self.draw_board()
 
         except ValueError:
             self.label.config(text="Please enter a valid number!")
 
+    def go_back(self):
+      
+        self.canvas.pack_forget()
+        self.button_frame.pack_forget()
+        self.input_frame.pack(expand=True)
+
+    def clear_board(self):
+        
+        self.solution = None
+        self.draw_board()
+
     def draw_board(self):
+       
         self.canvas.delete("all")
         cell_size = 400 // self.N
         for i in range(self.N):
@@ -120,12 +138,48 @@ class NQueensGUI(tk.Tk):
         
         threading.Thread(target=solve_and_update, daemon=True).start()
 
+    
+
+    def solve_n_queens_backtracking(self):
+
+        def is_safe(board, row, col):
+            for i in range(row):
+                if board[i] == col or abs(board[i] - col) == abs(i - row):
+                    return False
+            return True
+
+        def backtrack(board, row):
+            if row == self.N:
+                return board.copy()
+
+            columns = list(range(self.N))  # Generate column choices
+            random.shuffle(columns)  # Shuffle to introduce randomness
+
+            for col in columns:
+                if is_safe(board, row, col):
+                    board[row] = col
+                    solution = backtrack(board, row + 1)
+                    if solution:
+                        return solution
+
+            return None
+
+        board = [-1] * self.N
+        return backtrack(board, 0)
+
+
+       
+
+    def run_btg(self):
+        def solve_and_update():
+            solution = self.solve_n_queens_backtracking()
+            self.after(0, lambda: self.update_board(solution))
+    
+        threading.Thread(target=solve_and_update, daemon=True).start()
+
     def update_board(self, solution):
         self.solution = solution
         self.draw_board()
-
-    def run_btg(self):
-        print("Backtracking algorithm not implemented.")
 
 if __name__ == "__main__":
     app = NQueensGUI()
